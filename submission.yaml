@@ -7,38 +7,42 @@
 #   - Do NOT rename this file — the evaluation pipeline reads it by name
 #   - Use double quotes around all string values
 # =============================================================================
-
 team:
-  name: ""                             # REQUIRED — e.g., "Orion Squad"
-  track: ""                            # REQUIRED — one of: AI | DevOps | Sustainability | Open
+  name: "GridSynapse"
+  track: "AI"
   lead:
-    name: ""                           # REQUIRED — e.g., "Alice Chen"
-    email: ""                          # REQUIRED — e.g., "alice.chen@ibm.com"
+    name: "Dhruv Bhoi"
+    email: "d26ce154@charusat.edu.in"
   members:
-    - name: ""                         # REQUIRED — Team member 1
-      email: ""
-    - name: ""                         # Add more members by copying the two lines above
-      email: ""
-    - name: ""
-      email: ""
+    - name: "Jiya Sheth"
+      email: "d26ce174.email@charusat.edu.in"
+    - name: "Kush Parekh"
+      email: "d26ce148.email@charusat.edu.in"
+    - name: "Aditi"
+      email: "d26ce151.email@charusat.edu.in"
 
 submission:
-  title: ""                            # REQUIRED — Project display name, e.g., "SmartOps Dashboard"
-
-  problem_statement: >                 # REQUIRED — 1-3 sentences. What problem? Who has it?
-    Replace this text with a concise description of the real-world problem
-    your project addresses and who experiences it.
-
-  solution_summary: >                  # REQUIRED — 1-3 sentences. What did you build?
-    Replace this text with a clear description of your solution
-    and how it addresses the problem above.
-
-  key_features:                        # REQUIRED — List 3 to 5 specific features you implemented
-    - ""                               # e.g., "Real-time pipeline anomaly detection using watsonx.ai"
-    - ""
-    - ""
-    - ""                               # optional 4th
-    - ""                               # optional 5th
+  title: "OutageIQ"
+  problem_statement: >
+    Power transformer and substation failures cause blackouts costing utilities
+    over $1M per hour and affecting millions of people. Most utilities still rely
+    on fixed calendar-based maintenance schedules, even though sensor data
+    already measuring temperature, vibration, partial discharge, and oil quality
+    shows failure signatures weeks in advance. Weather events compound this risk,
+    but sensor data and weather forecasts are rarely combined in time to act.
+  solution_summary: >
+    OutageIQ is an AI-powered grid intelligence system that combines real-time
+    asset sensor data with live weather forecasts to predict which transformers
+    and substations are at risk of failure. Built using IBM Bob as the core
+    development and reasoning engine, OutageIQ scores each asset's risk,
+    explains the reasoning in plain language, and generates a prioritized
+    maintenance and crew pre-positioning plan for utility operations teams.
+  key_features:
+    - "Risk scoring engine combining sensor health, weather severity, and asset criticality"
+    - "Plain-language AI-generated risk explanations for each asset"
+    - "Prioritized maintenance and crew deployment recommendations"
+    - "Built end-to-end using IBM Bob as the primary development agent"
+                         
 
   tech_stack:
     languages: []                      # REQUIRED — e.g., ["Python", "TypeScript"]
