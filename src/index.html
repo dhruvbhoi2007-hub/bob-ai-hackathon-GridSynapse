@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OutageIQ — Grid Intelligence Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0d1321;
+      --surface:      #141d2f;
+      --surface-2:    #1a2540;
+      --border:       #243150;
+      --border-light: #2e3e63;
+      --text:         #e2e8f4;
+      --text-muted:   #7e92b8;
+      --text-dim:     #4e6089;
+
+      --critical:     #ef4444;
+      --critical-bg:  rgba(239,68,68,.12);
+      --high:         #f97316;
+      --high-bg:      rgba(249,115,22,.12);
+      --medium:       #eab308;
+      --medium-bg:    rgba(234,179,8,.12);
+      --low:          #22c55e;
+      --low-bg:       rgba(34,197,94,.12);
+
+      --accent:       #3b82f6;
+      --accent-glow:  rgba(59,130,246,.18);
+    }
+
+    html { font-size: 15px; }
+    body {
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(rgba(59,130,246,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,.03) 1px, transparent 1px),
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,.08), transparent);
+      background-size: 40px 40px, 40px 40px, 100% 100%;
+      color: var(--text);
+      font-family: -apple-system, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── LAYOUT ── */
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 28px 60px; }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 36px 0 28px;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .header-left { display: flex; flex-direction: column; gap: 2px; }
+    .header-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      line-height: 1.1;
+    }
+    .header-title span {
+      color: var(--accent);
+    }
+    .header-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .team-badge {
+      background: var(--surface-2);
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      white-space: nowrap;
+      align-self: flex-start;
+    }
+
+    /* ── SUMMARY BAR ── */
+    .summary-bar {
+      display: flex;
+      gap: 14px;
+      margin: 28px 0 0;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      flex: 1 1 120px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-card.total { border-color: var(--border-light); }
+    .stat-card.critical { border-left: 3px solid var(--critical); }
+    .stat-card.high     { border-left: 3px solid var(--high); }
+    .stat-card.medium   { border-left: 3px solid var(--medium); }
+    .stat-card.low      { border-left: 3px solid var(--low); }
+    .stat-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .stat-card.total   .stat-value { color: var(--text); }
+    .stat-card.critical .stat-value { color: var(--critical); }
+    .stat-card.high     .stat-value { color: var(--high); }
+    .stat-card.medium   .stat-value { color: var(--medium); }
+    .stat-card.low      .stat-value { color: var(--low); }
+
+    /* ── CHART ── */
+    .section {
+      margin-top: 32px;
+    }
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .chart-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 28px;
+    }
+    .chart-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .chart-row:last-child { margin-bottom: 0; }
+    .chart-label {
+      width: 68px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .chart-label.critical { color: var(--critical); }
+    .chart-label.high     { color: var(--high); }
+    .chart-label.medium   { color: var(--medium); }
+    .chart-label.low      { color: var(--low); }
+    .chart-track {
+      flex: 1;
+      height: 22px;
+      background: var(--surface-2);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .chart-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.9s cubic-bezier(.16,1,.3,1);
+    }
+    .chart-fill.critical { background: var(--critical); }
+    .chart-fill.high     { background: var(--high); }
+    .chart-fill.medium   { background: var(--medium); }
+    .chart-fill.low      { background: var(--low); }
+    .chart-count {
+      width: 28px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    /* ── ASSET CARDS ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .asset-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    .asset-card:hover {
+      border-color: var(--border-light);
+      box-shadow: 0 0 0 1px var(--border-light), 0 4px 24px rgba(0,0,0,.35);
+      transform: translateY(-2px);
+    }
+    .asset-card.critical { border-top: 2px solid var(--critical); }
+    .asset-card.high     { border-top: 2px solid var(--high); }
+    .asset-card.medium   { border-top: 2px solid var(--medium); }
+    .asset-card.low      { border-top: 2px solid var(--low); }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 18px 20px 14px;
+      gap: 10px;
+    }
+    .card-id-row { display: flex; flex-direction: column; gap: 3px; }
+    .card-id {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      color: var(--text);
+    }
+    .card-type {
+      font-size: 0.73rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .risk-badge {
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .risk-badge.critical { background: var(--critical-bg); color: var(--critical); border: 1px solid rgba(239,68,68,.3); }
+    .risk-badge.high     { background: var(--high-bg);     color: var(--high);     border: 1px solid rgba(249,115,22,.3); }
+    .risk-badge.medium   { background: var(--medium-bg);   color: var(--medium);   border: 1px solid rgba(234,179,8,.3); }
+    .risk-badge.low      { background: var(--low-bg);      color: var(--low);      border: 1px solid rgba(34,197,94,.3); }
+
+    .card-location {
+      padding: 0 20px 14px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-location::before {
+      content: '';
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    /* score bar inside card */
+    .card-score-row {
+      padding: 0 20px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-score-track {
+      flex: 1;
+      height: 6px;
+      background: var(--surface-2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .card-score-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+    .card-score-fill.critical { background: var(--critical); }
+    .card-score-fill.high     { background: var(--high); }
+    .card-score-fill.medium   { background: var(--medium); }
+    .card-score-fill.low      { background: var(--low); }
+    .card-score-num {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      width: 36px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* expand toggle */
+    .card-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      user-select: none;
+      transition: color 0.15s, background 0.15s;
+    }
+    .asset-card:hover .card-toggle { color: var(--accent); }
+    .toggle-arrow {
+      display: inline-block;
+      transition: transform 0.3s cubic-bezier(.16,1,.3,1);
+      font-style: normal;
+      font-size: 0.85rem;
+    }
+    .asset-card.expanded .toggle-arrow { transform: rotate(180deg); }
+
+    /* expandable detail panel */
+    .card-detail {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.45s cubic-bezier(.16,1,.3,1);
+    }
+    .asset-card.expanded .card-detail {
+      max-height: 600px;
+    }
+    .card-detail-inner {
+      padding: 18px 20px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .detail-section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 5px;
+    }
+    .detail-explanation {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+    .detail-action {
+      background: var(--surface-2);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .detail-action p {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .detail-action.critical { border-left: 3px solid var(--critical); }
+    .detail-action.high     { border-left: 3px solid var(--high); }
+    .detail-action.medium   { border-left: 3px solid var(--medium); }
+    .detail-action.low      { border-left: 3px solid var(--low); }
+
+    /* ── FOOTER ── */
+    footer {
+      margin-top: 56px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    footer span {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    /* ── LOADING / ERROR STATE ── */
+    #error-msg {
+      display: none;
+      background: var(--critical-bg);
+      border: 1px solid rgba(239,68,68,.3);
+      color: var(--critical);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="header-left">
+      <h1 class="header-title">Outage<span>IQ</span></h1>
+      <div class="header-subtitle">Grid Intelligence Dashboard</div>
+    </div>
+    <div class="team-badge">Team GridSynapse</div>
+  </header>
+
+  <div id="error-msg"></div>
+
+  <!-- SUMMARY BAR -->
+  <div class="summary-bar" id="summary-bar">
+    <div class="stat-card total">
+      <div class="stat-label">Assets Monitored</div>
+      <div class="stat-value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card critical">
+      <div class="stat-label">Critical</div>
+      <div class="stat-value" id="stat-critical">—</div>
+    </div>
+    <div class="stat-card high">
+      <div class="stat-label">High</div>
+      <div class="stat-value" id="stat-high">—</div>
+    </div>
+    <div class="stat-card medium">
+      <div class="stat-label">Medium</div>
+      <div class="stat-value" id="stat-medium">—</div>
+    </div>
+    <div class="stat-card low">
+      <div class="stat-label">Low</div>
+      <div class="stat-value" id="stat-low">—</div>
+    </div>
+  </div>
+
+  <!-- RISK DISTRIBUTION CHART -->
+  <div class="section">
+    <div class="section-title">Risk Distribution</div>
+    <div class="chart-container" id="chart-container"></div>
+  </div>
+
+  <!-- ASSET CARDS -->
+  <div class="section">
+    <div class="section-title">Asset Risk Overview — sorted by risk score</div>
+    <div class="cards-grid" id="cards-grid"></div>
+  </div>
+
+  <footer>
+    <span>Built with IBM Bob</span>
+    <span id="footer-date"></span>
+  </footer>
+
+</div>
+
+<script>
+  // ── EMBEDDED FALLBACK DATA ──────────────────────────────────────────────────
+  const FALLBACK_DATA = [{"asset_id":"S-021","asset_type":"Substation","location":"Zone A - Downtown Grid","criticality":"Critical","risk_score":81.08,"risk_label":"Critical","explanation":"Substation S-021 at Zone A - Downtown Grid has been assigned a risk score of 81.1 (Critical). Sensor analysis (contributing 100.0/100 at 60% weight) flagged: temperature 88°C exceeds safe limit of 85°C, partial discharge 510 pC exceeds safe limit of 400 pC, oil quality is Poor. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Critical (contributing 100/100 at 20% weight), as it serves 9,800 customers and has 3 prior failure(s) over its 22-year lifespan.","recommended_action":"Inspect within 6 hours and prepare contingency switching plan"},{"asset_id":"T-104","asset_type":"Transformer","location":"Zone A - Riverside Substation","criticality":"High","risk_score":74.97,"risk_label":"High","explanation":"Transformer T-104 at Zone A - Riverside Substation has been assigned a risk score of 75.0 (High). Sensor analysis (contributing 98.2/100 at 60% weight) flagged: temperature 92°C exceeds safe limit of 85°C, vibration 7.8 mm/s exceeds safe limit of 6 mm/s, partial discharge 480 pC exceeds safe limit of 400 pC, oil quality is Degraded. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is High (contributing 75/100 at 20% weight), as it serves 4,200 customers and has 2 prior failure(s) over its 18-year lifespan.","recommended_action":"Schedule inspection within 24 hours"},{"asset_id":"S-009","asset_type":"Substation","location":"Zone C - Eastgate Grid","criticality":"High","risk_score":70.25,"risk_label":"High","explanation":"Substation S-009 at Zone C - Eastgate Grid has been assigned a risk score of 70.3 (High). Sensor analysis (contributing 90.3/100 at 60% weight) flagged: vibration 6.8 mm/s exceeds safe limit of 6 mm/s, partial discharge 450 pC exceeds safe limit of 400 pC, oil quality is Degraded. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is High (contributing 75/100 at 20% weight), as it serves 5,600 customers and has 2 prior failure(s) over its 20-year lifespan.","recommended_action":"Schedule inspection within 24 hours"},{"asset_id":"T-087","asset_type":"Transformer","location":"Zone B - Millbrook Substation","criticality":"High","risk_score":62.08,"risk_label":"High","explanation":"Transformer T-087 at Zone B - Millbrook Substation has been assigned a risk score of 62.1 (High). Sensor analysis (contributing 76.7/100 at 60% weight) flagged: vibration 6.2 mm/s exceeds safe limit of 6 mm/s, oil quality is Fair (moderate concern). Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is High (contributing 75/100 at 20% weight), as it serves 3,100 customers and has 1 prior failure(s) over its 12-year lifespan.","recommended_action":"Schedule inspection within 24 hours"},{"asset_id":"T-112","asset_type":"Transformer","location":"Zone B - Northside Substation","criticality":"Medium","risk_score":39.81,"risk_label":"Low","explanation":"Transformer T-112 at Zone B - Northside Substation has been assigned a risk score of 39.8 (Low). Sensor analysis (contributing 47.9/100 at 60% weight) flagged: oil quality is Fair (moderate concern). Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Medium (contributing 50/100 at 20% weight), as it serves 2,200 customers and has 1 prior failure(s) over its 15-year lifespan.","recommended_action":"Monitor remotely; next scheduled maintenance cycle"},{"asset_id":"T-043","asset_type":"Transformer","location":"Zone C - Oakridge Substation","criticality":"Medium","risk_score":31.26,"risk_label":"Low","explanation":"Transformer T-043 at Zone C - Oakridge Substation has been assigned a risk score of 31.3 (Low). Sensor analysis (contributing 33.6/100 at 60% weight) flagged: all sensor readings are within safe operating limits. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Medium (contributing 50/100 at 20% weight), as it serves 1,500 customers and has 0 prior failure(s) over its 8-year lifespan.","recommended_action":"Monitor remotely; next scheduled maintenance cycle"},{"asset_id":"T-065","asset_type":"Transformer","location":"Zone D - Southbay Substation","criticality":"Low","risk_score":24.44,"risk_label":"Low","explanation":"Transformer T-065 at Zone D - Southbay Substation has been assigned a risk score of 24.4 (Low). Sensor analysis (contributing 30.6/100 at 60% weight) flagged: all sensor readings are within safe operating limits. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Low (contributing 25/100 at 20% weight), as it serves 950 customers and has 0 prior failure(s) over its 6-year lifespan.","recommended_action":"Monitor remotely; next scheduled maintenance cycle"},{"asset_id":"S-018","asset_type":"Substation","location":"Zone D - Harbor District","criticality":"Low","risk_score":23.17,"risk_label":"Low","explanation":"Substation S-018 at Zone D - Harbor District has been assigned a risk score of 23.2 (Low). Sensor analysis (contributing 28.5/100 at 60% weight) flagged: all sensor readings are within safe operating limits. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Low (contributing 25/100 at 20% weight), as it serves 800 customers and has 0 prior failure(s) over its 5-year lifespan.","recommended_action":"Monitor remotely; next scheduled maintenance cycle"}];
+
+  // ── UTILS ──────────────────────────────────────────────────────────────────
+  function esc(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function labelClass(label) {
+    const l = String(label).toLowerCase();
+    if (l === 'critical') return 'critical';
+    if (l === 'high')     return 'high';
+    if (l === 'medium')   return 'medium';
+    return 'low';
+  }
+
+  // ── RENDER ─────────────────────────────────────────────────────────────────
+  function render(data) {
+    // Sort descending by risk_score
+    const sorted = [...data].sort((a, b) => b.risk_score - a.risk_score);
+
+    // Counts
+    const counts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+    sorted.forEach(d => {
+      const k = d.risk_label;
+      if (counts[k] !== undefined) counts[k]++;
+      else counts.Low++;
+    });
+    const total = sorted.length;
+
+    // Stats bar
+    document.getElementById('stat-total').textContent    = total;
+    document.getElementById('stat-critical').textContent = counts.Critical;
+    document.getElementById('stat-high').textContent     = counts.High;
+    document.getElementById('stat-medium').textContent   = counts.Medium;
+    document.getElementById('stat-low').textContent      = counts.Low;
+
+    // Chart
+    const chartEl = document.getElementById('chart-container');
+    const maxCount = Math.max(...Object.values(counts), 1);
+    const chartRows = [
+      { label: 'Critical', cls: 'critical', count: counts.Critical },
+      { label: 'High',     cls: 'high',     count: counts.High },
+      { label: 'Medium',   cls: 'medium',   count: counts.Medium },
+      { label: 'Low',      cls: 'low',       count: counts.Low },
+    ];
+    chartEl.innerHTML = chartRows.map(r => {
+      const pct = total > 0 ? (r.count / total * 100).toFixed(1) : 0;
+      const barW = (r.count / maxCount * 100).toFixed(1);
+      return `<div class="chart-row">
+        <div class="chart-label ${r.cls}">${r.label}</div>
+        <div class="chart-track">
+          <div class="chart-fill ${r.cls}" style="width:${barW}%" title="${r.count} asset(s) — ${pct}%"></div>
+        </div>
+        <div class="chart-count">${r.count}</div>
+      </div>`;
+    }).join('');
+
+    // Cards
+    const grid = document.getElementById('cards-grid');
+    grid.innerHTML = sorted.map((asset, idx) => {
+      const cls  = labelClass(asset.risk_label);
+      const pct  = Math.round(asset.risk_score);
+      return `
+      <div class="asset-card ${cls}" id="card-${idx}" role="button" tabindex="0"
+           aria-expanded="false" onclick="toggleCard(${idx})" onkeydown="if(event.key==='Enter'||event.key===' ')toggleCard(${idx})">
+        <div class="card-header">
+          <div class="card-id-row">
+            <div class="card-id">${esc(asset.asset_id)}</div>
+            <div class="card-type">${esc(asset.asset_type)}</div>
+          </div>
+          <div class="risk-badge ${cls}">${esc(asset.risk_label)}</div>
+        </div>
+        <div class="card-location">${esc(asset.location)}</div>
+        <div class="card-score-row">
+          <div class="card-score-track">
+            <div class="card-score-fill ${cls}" style="width:${pct}%"></div>
+          </div>
+          <div class="card-score-num">${asset.risk_score.toFixed(1)}</div>
+        </div>
+        <div class="card-toggle">
+          <i class="toggle-arrow">▾</i> Why this matters
+        </div>
+        <div class="card-detail">
+          <div class="card-detail-inner">
+            <div>
+              <div class="detail-section-label">Risk Analysis</div>
+              <div class="detail-explanation">${esc(asset.explanation)}</div>
+            </div>
+            <div>
+              <div class="detail-section-label">Recommended Action</div>
+              <div class="detail-action ${cls}">
+                <p>${esc(asset.recommended_action)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Animate chart bars on load (start at 0 width, CSS transition kicks in)
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.chart-fill').forEach(el => {
+        const w = el.style.width;
+        el.style.width = '0%';
+        requestAnimationFrame(() => { el.style.width = w; });
+      });
+    });
+  }
+
+  function toggleCard(idx) {
+    const card = document.getElementById('card-' + idx);
+    const expanded = card.classList.toggle('expanded');
+    card.setAttribute('aria-expanded', expanded);
+  }
+
+  // ── FOOTER DATE ────────────────────────────────────────────────────────────
+  document.getElementById('footer-date').textContent =
+    new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // ── LOAD DATA ──────────────────────────────────────────────────────────────
+  (function loadData() {
+    // Try relative fetch first (works when served via HTTP/S)
+    if (typeof fetch !== 'undefined') {
+      fetch('./data/risk_output.json')
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(data => render(data))
+        .catch(() => render(FALLBACK_DATA));
+    } else {
+      render(FALLBACK_DATA);
+    }
+  })();
+</script>
+</body>
+</html>
