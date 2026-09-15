@@ -367,6 +367,7 @@ def main():
             "risk_label":         label,
             "explanation":        explanation,
             "recommended_action": action,
+            "history":            asset.get("history", []),
         })
 
     # Sort descending by risk score
