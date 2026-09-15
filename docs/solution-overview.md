@@ -13,7 +13,7 @@ The system works in four stages:
    - **Sensor risk (60%)** — how far each sensor reading is from its safe operating threshold, combined so that the single worst reading dominates the score and additional breaches stack on top of it, rather than being diluted by an average across all sensors.
    - **Weather risk (20%)** — current wind speed and precipitation relative to safety thresholds.
    - **Asset criticality (20%)** — how much impact a failure of this specific asset would have (based on customers served and its role in the grid).
-3. **AI-generated explanation** — for each asset, the system generates a plain-English paragraph explaining exactly *why* it received its score, citing its actual sensor readings and current weather — not a generic label, but a specific, defensible explanation a technician could act on immediately.
+3. **Plain Language Explanation** — for each asset, the system generates a plain-English paragraph explaining exactly *why* it received its score, citing its actual sensor readings and current weather — not a generic label, but a specific, defensible explanation a technician could act on immediately.
 4. **Prioritized recommendation** — each asset is labeled Critical / High / Medium / Low, and paired with a concrete, time-bound recommended action (e.g., "Inspect within 6 hours" for Critical assets, down to "Monitor remotely" for Low-risk ones), so operations teams know not just *what's* at risk, but *what to do about it* and *how urgently*.
 
 ## What Makes This Different From a Naive Alternative
@@ -21,7 +21,7 @@ The system works in four stages:
 A naive version of this problem would simply flag any sensor reading above a fixed threshold. OutageIQ goes further in two specific ways:
 
 - **It combines multiple weak signals into one strong signal.** An asset with several sensors each slightly elevated, plus incoming bad weather, is often a bigger real-world risk than an asset with one sensor spiking in isolation — and the scoring formula is specifically designed to reflect that (the worst single reading sets the floor, but every additional issue compounds the score rather than being averaged away).
-- **It explains its reasoning, not just its output.** A raw "risk = 81" number tells an operator nothing actionable. OutageIQ's AI-generated explanations name the specific sensor readings and conditions responsible, which builds trust in the system's output and gives a technician a starting point for their physical inspection.
+- **It explains its reasoning, not just its output.** A raw "risk = 81" number tells an operator nothing actionable. OutageIQ's explanations name the specific sensor readings and conditions responsible, which builds trust in the system's output and gives a technician a starting point for their physical inspection.
 
 ## Key Design Decisions
 
