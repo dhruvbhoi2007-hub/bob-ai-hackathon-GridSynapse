@@ -1,6 +1,4 @@
-# 🚀 [Your Project Title Here]
-
-> ⚠️ **Replace everything in `[ ]` brackets with your actual content before submission.**
+# ⚡ OutageIQ
 
 ---
 
@@ -8,36 +6,31 @@
 
 | Field | Value |
 |---|---|
-| **Team Name** | [Your Team Name] |
-| **Track** | [AI / DevOps / Sustainability / Open] |
-| **Team Lead** | [Name] — [email@ibm.com] |
-| **Members** | [Name 1], [Name 2], [Name 3] |
+| **Team Name** | GridSynapse |
+| **Track** | AI (Utilities) |
+| **Team Lead** | Dhruv Bhoi |
+| **Members** | Jiya Sheth, Kush Parekh, Aditi Goraniya|
 
 ---
 
 ## 🎯 Problem Statement
 
-> In 2–3 sentences: What problem does your project solve? Who experiences this problem?
-
-[Describe the real-world problem your project addresses. Be specific about who the user is and what pain point they face.]
+Utility operators typically discover failing grid equipment — transformers, substations — only after it fails, causing unplanned power outages. There's no easy way to see, at a glance, which assets are quietly degrading and need attention before they cause a blackout.
 
 ---
 
 ## 💡 Solution
 
-> In 2–3 sentences: What did you build? How does it solve the problem above?
-
-[Describe your solution clearly. Explain the core mechanism — what makes it work.]
+OutageIQ is a risk-monitoring dashboard that scores each grid asset's likelihood of failure using sensor condition, live weather data, and asset criticality. Instead of reacting after an outage, operators get an early-warning view of at-risk equipment with a plain-language explanation and a recommended action for each one.
 
 ---
 
 ## ✨ Key Features
 
-- **Feature 1:** [Brief description — e.g., "Real-time anomaly detection using watsonx.ai"]
-- **Feature 2:** [Brief description]
-- **Feature 3:** [Brief description]
-- **Feature 4:** [Optional]
-- **Feature 5:** [Optional]
+- **Weighted risk scoring:** Combines sensor condition (60%), weather risk (20%), and asset criticality (20%) into a single risk score per asset.
+- **Live weather integration:** Pulls real-time weather conditions per asset location from the Open-Meteo API.
+- **Explainable results:** Every score comes with a plain-language explanation and a recommended action — no black box.
+- **Visual dashboard:** Summary stats, a risk-distribution chart, and color-coded, expandable asset cards for drill-down detail.
 
 ---
 
@@ -45,11 +38,11 @@
 
 | Category | Technologies |
 |---|---|
-| **Languages** | [e.g., Python, TypeScript] |
-| **Frameworks** | [e.g., FastAPI, React] |
-| **IBM Technologies** | [e.g., watsonx.ai, IBM Bob, IBM Cloud] |
-| **Databases** | [e.g., PostgreSQL, Redis] |
-| **Other** | [e.g., Docker, GitHub Actions] |
+| **Languages** | Python, JavaScript, HTML/CSS |
+| **Frameworks** | None — lightweight static dashboard + standalone Python risk engine |
+| **IBM Technologies** | IBM Bob (Agent mode) |
+| **Databases** | None — asset data stored as JSON |
+| **Other** | Open-Meteo API, GitHub Actions |
 
 ---
 
@@ -57,6 +50,9 @@
 
 ```
 ├── src/                  # All source code
+│   ├── data/             # Mock asset dataset + risk output
+│   ├── risk_engine.py    # Risk scoring engine
+│   └── index.html        # Dashboard
 ├── docs/                 # Written documentation
 │   ├── problem-statement.md
 │   ├── solution-overview.md
@@ -65,6 +61,7 @@
 ├── demo/                 # Demo artifacts
 │   ├── screenshots/      # App screenshots
 │   └── demo-video-link.txt  # Link to demo video
+├── bob_sessions/         # IBM Bob task session logs + consumption summaries
 ├── presentation/         # Slide deck
 └── submission.yaml       # Structured submission metadata
 ```
@@ -73,23 +70,27 @@
 
 ## ⚡ How to Run
 
-> **Copy these exact steps from your [`docs/setup-guide.md`](docs/setup-guide.md)**
+> See [`docs/setup-guide.md`](docs/setup-guide.md) for full details.
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/[your-repo].git
-cd [your-repo]
+git clone https://github.com/dhruvbhoi2007-hub/bob-ai-hackathon-GridSynapse.git
+cd bob-ai-hackathon-GridSynapse
 
-# 2. Install dependencies
-[your install command here]
+# 2. View the dashboard immediately — no setup needed
+# Just open src/index.html in your browser (uses a pre-scored data snapshot)
 
-# 3. Configure environment
-cp .env.example .env
-# Edit .env with your values
+# 3. (Optional) Re-run the risk engine with fresh live weather data
+pip install requests
+python src/risk_engine.py
 
-# 4. Run the project
-[your run command here]
+# 4. (Optional) Serve locally to guarantee the dashboard reads the fresh data
+cd src
+python -m http.server 8000
+# then open http://localhost:8000/index.html
 ```
+
+No environment variables or `.env` file are needed — the project makes no authenticated API calls. See [`docs/setup-guide.md`](docs/setup-guide.md) for full details and troubleshooting.
 
 ---
 
@@ -98,24 +99,22 @@ cp .env.example .env
 | Artifact | Link |
 |---|---|
 | 📹 Demo Video | [See demo/demo-video-link.txt](demo/demo-video-link.txt) |
-| 🌐 Live Demo | [See demo/live-demo-url.txt](demo/live-demo-url.txt) |
 | 🖼️ Screenshots | [See demo/screenshots/](demo/screenshots/) |
-| 📊 Presentation | [See presentation/slides.pdf](presentation/) |
+| 📊 Presentation | [See presentation/](presentation/) |
 
 ---
 
 ## ⚠️ Known Limitations
 
-> Be honest — judges appreciate transparency over overclaiming.
-
-- [Limitation 1: e.g., "Authentication is mocked — not production-ready"]
-- [Limitation 2: e.g., "Only tested on Chrome"]
-- [Limitation 3: e.g., "Feature X is scaffolded but not fully implemented"]
+- Risk scoring is rule-based (weighted formula), not a trained ML model — chosen for transparency and speed of delivery within the hackathon timeline.
+- Asset dataset is mock/synthetic data, not connected to real utility sensor feeds.
+- No live cloud deployment — runs locally, per hackathon rules.
+- No authentication or multi-user support — single-operator demo scope.
 
 ---
 
 ## 🏅 What We're Most Proud Of
 
-[Tell the judges what part of your submission is strongest and worth paying close attention to.]
+Building a fully working, explainable risk-scoring pipeline — from raw asset + weather data to a clear, actionable dashboard — as a solo, first-time coder relying on IBM Bob as the core development agent for every line of code.
 
 ---
