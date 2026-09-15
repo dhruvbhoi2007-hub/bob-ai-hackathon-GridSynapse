@@ -18,7 +18,7 @@ team:
       email: "d26ce174.email@charusat.edu.in"
     - name: "Kush Parekh"
       email: "d26ce148.email@charusat.edu.in"
-    - name: "Aditi"
+    - name: "Aditi Goraniya"
       email: "d26ce151.email@charusat.edu.in"
 
 submission:
@@ -45,19 +45,30 @@ submission:
                          
 
   tech_stack:
-    languages: []                      # REQUIRED — e.g., ["Python", "TypeScript"]
-    frameworks: []                     # e.g., ["FastAPI", "React"]
-    ibm_technologies: []               # e.g., ["watsonx.ai", "IBM Bob", "IBM Cloud Functions"]
-    databases: []                      # e.g., ["PostgreSQL", "Redis"]
-    other: []                          # e.g., ["Docker", "GitHub Actions", "Slack API"]
+    languages: ["Python", "JavaScript", "HTML", "CSS"]
+    frameworks: ["Flask", "flask-cors"]
+    ibm_technologies: ["watsonx.ai", "IBM Bob", "ibm-watsonx-ai Python SDK"]
+    databases: []
+    other: ["Open-Meteo API", "python-dotenv", "GitHub Actions"]
 
-  what_we_are_most_proud_of: >         # Optional but recommended — guides judges to your best work
-    Replace with what aspect of the submission you consider strongest
-    and want judges to pay special attention to.
+  what_we_are_most_proud_of: >
+    Building a fully working, explainable risk-scoring pipeline — from raw asset and
+    weather data to a clear, actionable dashboard with AI-generated explanations and
+    an interactive AI Advisor chat (Flask + watsonx.ai Granite) — developed end-to-end
+    using IBM Bob as the primary coding agent. The pipeline gracefully degrades: if
+    watsonx.ai is unavailable, the risk engine falls back to static rule-based
+    explanations so the dashboard always works. Judges should pay special attention to
+    the scoring normalization logic in risk_engine.py (ensuring a single bad sensor
+    sets a high floor while additional breaches stack on top) and to the watsonx.ai
+    integration in both risk_engine.py and app.py.
 
-  known_limitations: >                 # Optional but recommended — be honest about gaps
-    Replace with any known limitations, incomplete features,
-    or shortcuts taken due to time constraints.
+  known_limitations: >
+    The risk score is a rule-based weighted formula (sensor 60%, weather 20%,
+    criticality 20%), not a trained ML model — chosen for transparency and auditability.
+    Asset and sensor data is synthetic (assets.json), not connected to real SCADA/sensor
+    feeds. The AI Advisor backend (app.py) requires valid watsonx.ai credentials and has
+    no offline fallback mode. No live cloud deployment — the solution runs entirely
+    locally per hackathon rules. No authentication or multi-user support.
 
 # =============================================================================
 # ARTIFACT LOCATIONS
@@ -67,7 +78,7 @@ artifacts:
   source_code: "src/"
   setup_guide: "docs/setup-guide.md"
   architecture_doc: "docs/architecture.md"
-  demo_video: "demo/demo-video-link.txt"   # URL to hosted video (YouTube, Loom, Box)
-  live_demo: "demo/live-demo-url.txt"      # URL to deployed demo (optional)
+  demo_video: "https://youtu.be/Zfm04pKZHp8"
+  live_demo: "NOT DEPLOYED — run locally using docs/setup-guide.md"
   screenshots: "demo/screenshots/"
   presentation: "presentation/"
