@@ -223,10 +223,6 @@ def build_explanation(
 # watsonx.ai AI explanation (with static fallback)
 # ---------------------------------------------------------------------------
 
-_WATSONX_URL = "https://eu-de.ml.cloud.ibm.com"
-_MODEL_ID = "ibm/granite-4-h-small"
-
-
 def generate_explanation(
     asset: dict,
     score: float,
@@ -249,8 +245,7 @@ def generate_explanation(
 
     if api_key and project_id:
         try:
-            from ibm_watsonx_ai import Credentials
-            from ibm_watsonx_ai.foundation_models import ModelInference
+            from watsonx_client import get_model
 
             sensor_summary = (
                 "; ".join(breakdown["sensor_notes"])
@@ -285,12 +280,7 @@ def generate_explanation(
                 f"Action: <1 sentence recommended action>\n"
             )
 
-            credentials = Credentials(url=_WATSONX_URL, api_key=api_key)
-            model = ModelInference(
-                model_id=_MODEL_ID,
-                credentials=credentials,
-                project_id=project_id,
-            )
+            model = get_model()
             response = model.chat(
                 messages=[{"role": "user", "content": prompt}],
                 params={"max_tokens": 200, "temperature": 0.2},

@@ -397,6 +397,157 @@
       font-size: 0.85rem;
       margin-top: 20px;
     }
+
+    /* ── AI ADVISOR CHAT ── */
+    #chat-fab {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      box-shadow: 0 4px 20px rgba(59,130,246,.45);
+      transition: transform 0.15s, box-shadow 0.15s;
+      z-index: 100;
+      color: #fff;
+    }
+    #chat-fab:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(59,130,246,.6); }
+
+    #chat-panel {
+      position: fixed;
+      bottom: 92px;
+      right: 28px;
+      width: 340px;
+      max-height: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,.5);
+      z-index: 100;
+      overflow: hidden;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    #chat-panel.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+    }
+
+    .chat-panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .chat-panel-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .chat-close-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+    .chat-close-btn:hover { color: var(--text); }
+
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .chat-msg {
+      font-size: 0.83rem;
+      line-height: 1.55;
+      max-width: 92%;
+      padding: 8px 12px;
+      border-radius: 10px;
+    }
+    .chat-msg.user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+    .chat-msg.ai {
+      align-self: flex-start;
+      background: var(--surface-2);
+      color: var(--text);
+      border-bottom-left-radius: 3px;
+    }
+    .chat-msg.offline {
+      align-self: flex-start;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      font-style: italic;
+    }
+    .chat-msg.thinking {
+      align-self: flex-start;
+      color: var(--text-dim);
+      font-style: italic;
+      background: transparent;
+      padding-left: 0;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+    }
+    #chat-input {
+      flex: 1;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.83rem;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+      resize: none;
+    }
+    #chat-input:focus { border-color: var(--accent); }
+    #chat-send {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    #chat-send:hover { opacity: 0.88; }
+    #chat-send:disabled { opacity: 0.45; cursor: default; }
   </style>
 </head>
 <body>
@@ -455,7 +606,95 @@
 
 </div>
 
+<!-- ── AI ADVISOR FLOATING BUTTON ── -->
+<button id="chat-fab" title="AI Advisor" aria-label="Open AI Advisor">&#x1F916;</button>
+
+<!-- ── AI ADVISOR CHAT PANEL ── -->
+<div id="chat-panel" class="hidden" role="dialog" aria-label="AI Advisor chat">
+  <div class="chat-panel-header">
+    <span class="chat-panel-title">AI Advisor</span>
+    <button class="chat-close-btn" id="chat-close" aria-label="Close chat">&#x2715;</button>
+  </div>
+  <div id="chat-messages"></div>
+  <div class="chat-input-row">
+    <input id="chat-input" type="text" placeholder="Ask about grid risks…" maxlength="300" autocomplete="off" />
+    <button id="chat-send">Send</button>
+  </div>
+</div>
+
 <script>
+  // ── AI ADVISOR CHAT ──────────────────────────────────────────────────────────
+  (function initChat() {
+    const CHAT_API = 'http://localhost:5000/api/chat';
+    const fab      = document.getElementById('chat-fab');
+    const panel    = document.getElementById('chat-panel');
+    const closeBtn = document.getElementById('chat-close');
+    const messages = document.getElementById('chat-messages');
+    const input    = document.getElementById('chat-input');
+    const sendBtn  = document.getElementById('chat-send');
+
+    function togglePanel() {
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) {
+        input.focus();
+        if (messages.children.length === 0) {
+          appendMsg('ai', 'Hello! Ask me anything about the current grid risk data — e.g. "Which assets need attention today?" or "What should I do about S-021?"');
+        }
+      }
+    }
+
+    fab.addEventListener('click', togglePanel);
+    closeBtn.addEventListener('click', () => panel.classList.add('hidden'));
+
+    function appendMsg(role, text) {
+      const div = document.createElement('div');
+      div.className = 'chat-msg ' + role;
+      div.textContent = text;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+      return div;
+    }
+
+    async function sendMessage() {
+      const question = input.value.trim();
+      if (!question) return;
+      input.value = '';
+      sendBtn.disabled = true;
+
+      appendMsg('user', question);
+      const thinking = appendMsg('thinking', 'Thinking…');
+
+      try {
+        const res = await fetch(CHAT_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question }),
+        });
+
+        thinking.remove();
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          appendMsg('ai', 'Sorry, the AI advisor returned an error: ' + (err.error || res.statusText));
+        } else {
+          const data = await res.json();
+          appendMsg('ai', data.answer || '(no response)');
+        }
+      } catch (_) {
+        thinking.remove();
+        appendMsg('offline', 'AI advisor is offline — start the backend with: python src/app.py');
+      } finally {
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+  })();
+
   // ── EMBEDDED FALLBACK DATA ──────────────────────────────────────────────────
   const FALLBACK_DATA = [{"asset_id":"S-021","asset_type":"Substation","location":"Zone A - Downtown Grid","criticality":"Critical","risk_score":81.08,"risk_label":"Critical","explanation":"Substation S-021 at Zone A - Downtown Grid has been assigned a risk score of 81.1 (Critical). Sensor analysis (contributing 100.0/100 at 60% weight) flagged: temperature 88°C exceeds safe limit of 85°C, partial discharge 510 pC exceeds safe limit of 400 pC, oil quality is Poor. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Critical (contributing 100/100 at 20% weight), as it serves 9,800 customers and has 3 prior failure(s) over its 22-year lifespan.","recommended_action":"Inspect within 6 hours and prepare contingency switching plan"},{"asset_id":"T-104","asset_type":"Transformer","location":"Zone A - Riverside Substation","criticality":"High","risk_score":74.97,"risk_label":"High","explanation":"Transformer T-104 at Zone A - Riverside Substation has been assigned a risk score of 75.0 (High). Sensor analysis (contributing 98.2/100 at 60% weight) flagged: temperature 92°C exceeds safe limit of 85°C, vibration 7.8 mm/s exceeds safe limit of 6 mm/s, partial discharge 480 pC exceeds safe limit of 400 pC, oil quality is Degraded. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is High (contributing 75/100 at 20% weight), as it serves 4,200 customers and has 2 prior failure(s) over its 18-year lifespan.","recommended_action":"Schedule inspection within 24 hours"},{"asset_id":"S-009","asset_type":"Substation","location":"Zone C - Eastgate Grid","criticality":"High","risk_score":70.25,"risk_label":"High","explanation":"Substation S-009 at Zone C - Eastgate Grid has been assigned a risk score of 70.3 (High). Sensor analysis (contributing 90.3/100 at 60% weight) flagged: vibration 6.8 mm/s exceeds safe limit of 6 mm/s, partial discharge 450 pC exceeds safe limit of 400 pC, oil quality is Degraded. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is High (contributing 75/100 at 20% weight), as it serves 5,600 customers and has 2 prior failure(s) over its 20-year lifespan.","recommended_action":"Schedule inspection within 24 hours"},{"asset_id":"T-087","asset_type":"Transformer","location":"Zone B - Millbrook Substation","criticality":"High","risk_score":62.08,"risk_label":"High","explanation":"Transformer T-087 at Zone B - Millbrook Substation has been assigned a risk score of 62.1 (High). Sensor analysis (contributing 76.7/100 at 60% weight) flagged: vibration 6.2 mm/s exceeds safe limit of 6 mm/s, oil quality is Fair (moderate concern). Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is High (contributing 75/100 at 20% weight), as it serves 3,100 customers and has 1 prior failure(s) over its 12-year lifespan.","recommended_action":"Schedule inspection within 24 hours"},{"asset_id":"T-112","asset_type":"Transformer","location":"Zone B - Northside Substation","criticality":"Medium","risk_score":39.81,"risk_label":"Low","explanation":"Transformer T-112 at Zone B - Northside Substation has been assigned a risk score of 39.8 (Low). Sensor analysis (contributing 47.9/100 at 60% weight) flagged: oil quality is Fair (moderate concern). Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Medium (contributing 50/100 at 20% weight), as it serves 2,200 customers and has 1 prior failure(s) over its 15-year lifespan.","recommended_action":"Monitor remotely; next scheduled maintenance cycle"},{"asset_id":"T-043","asset_type":"Transformer","location":"Zone C - Oakridge Substation","criticality":"Medium","risk_score":31.26,"risk_label":"Low","explanation":"Transformer T-043 at Zone C - Oakridge Substation has been assigned a risk score of 31.3 (Low). Sensor analysis (contributing 33.6/100 at 60% weight) flagged: all sensor readings are within safe operating limits. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Medium (contributing 50/100 at 20% weight), as it serves 1,500 customers and has 0 prior failure(s) over its 8-year lifespan.","recommended_action":"Monitor remotely; next scheduled maintenance cycle"},{"asset_id":"T-065","asset_type":"Transformer","location":"Zone D - Southbay Substation","criticality":"Low","risk_score":24.44,"risk_label":"Low","explanation":"Transformer T-065 at Zone D - Southbay Substation has been assigned a risk score of 24.4 (Low). Sensor analysis (contributing 30.6/100 at 60% weight) flagged: all sensor readings are within safe operating limits. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Low (contributing 25/100 at 20% weight), as it serves 950 customers and has 0 prior failure(s) over its 6-year lifespan.","recommended_action":"Monitor remotely; next scheduled maintenance cycle"},{"asset_id":"S-018","asset_type":"Substation","location":"Zone D - Harbor District","criticality":"Low","risk_score":23.17,"risk_label":"Low","explanation":"Substation S-018 at Zone D - Harbor District has been assigned a risk score of 23.2 (Low). Sensor analysis (contributing 28.5/100 at 60% weight) flagged: all sensor readings are within safe operating limits. Weather conditions at the region contribute 5.4/100 at 20% weight — current weather conditions are benign (wind 2.3 km/h, precipitation 0.7 mm). The asset's operational criticality is Low (contributing 25/100 at 20% weight), as it serves 800 customers and has 0 prior failure(s) over its 5-year lifespan.","recommended_action":"Monitor remotely; next scheduled maintenance cycle"}];
 
