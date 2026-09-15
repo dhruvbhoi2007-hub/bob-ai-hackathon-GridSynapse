@@ -9,7 +9,7 @@
 | **Team Name** | GridSynapse |
 | **Track** | AI (Utilities) |
 | **Team Lead** | Dhruv Bhoi |
-| **Members** | Jiya Sheth, Kush Parekh, Aditi Goraniya|
+| **Members** | Jiya Sheth, Kush Parekh, Aditi |
 
 ---
 
@@ -29,7 +29,7 @@ OutageIQ is a risk-monitoring dashboard that scores each grid asset's likelihood
 
 - **Weighted risk scoring:** Combines sensor condition (60%), weather risk (20%), and asset criticality (20%) into a single risk score per asset.
 - **Live weather integration:** Pulls real-time weather conditions per asset location from the Open-Meteo API.
-- **Explainable results:** Every score comes with a plain-language explanation and a recommended action — no black box.
+- **AI-generated explanations:** Every score comes with a plain-language explanation and a recommended action, generated via watsonx.ai (Granite) — with a safe fallback to static logic if the API is unavailable.
 - **Visual dashboard:** Summary stats, a risk-distribution chart, and color-coded, expandable asset cards for drill-down detail.
 
 ---
@@ -40,7 +40,7 @@ OutageIQ is a risk-monitoring dashboard that scores each grid asset's likelihood
 |---|---|
 | **Languages** | Python, JavaScript, HTML/CSS |
 | **Frameworks** | None — lightweight static dashboard + standalone Python risk engine |
-| **IBM Technologies** | IBM Bob (Agent mode) |
+| **IBM Technologies** | IBM Bob (Agent mode), watsonx.ai (Granite) |
 | **Databases** | None — asset data stored as JSON |
 | **Other** | Open-Meteo API, GitHub Actions |
 
@@ -80,8 +80,10 @@ cd bob-ai-hackathon-GridSynapse
 # 2. View the dashboard immediately — no setup needed
 # Just open src/index.html in your browser (uses a pre-scored data snapshot)
 
-# 3. (Optional) Re-run the risk engine with fresh live weather data
-pip install requests
+# 3. (Optional) Re-run the risk engine with fresh live weather + AI-generated explanations
+pip install -r requirements.txt
+cp src/.env.example src/.env
+# Edit src/.env with your own WATSONX_API_KEY and WATSONX_PROJECT_ID
 python src/risk_engine.py
 
 # 4. (Optional) Serve locally to guarantee the dashboard reads the fresh data
@@ -90,7 +92,7 @@ python -m http.server 8000
 # then open http://localhost:8000/index.html
 ```
 
-No environment variables or `.env` file are needed — the project makes no authenticated API calls. See [`docs/setup-guide.md`](docs/setup-guide.md) for full details and troubleshooting.
+Re-running the risk engine with live data requires your own watsonx.ai `API_KEY` and `PROJECT_ID` (see step 3) — but the dashboard works immediately out of the box using the pre-scored `risk_output.json` snapshot, no credentials needed. If the watsonx.ai call fails for any reason, the engine automatically falls back to static explanation logic so the dashboard never breaks. See [`docs/setup-guide.md`](docs/setup-guide.md) for full details and troubleshooting.
 
 ---
 
@@ -106,7 +108,7 @@ No environment variables or `.env` file are needed — the project makes no auth
 
 ## ⚠️ Known Limitations
 
-- Risk scoring is rule-based (weighted formula), not a trained ML model — chosen for transparency and speed of delivery within the hackathon timeline.
+- Risk *score* is rule-based (weighted formula), not a trained ML model — chosen for transparency; only the explanation/recommendation text is AI-generated via watsonx.ai.
 - Asset dataset is mock/synthetic data, not connected to real utility sensor feeds.
 - No live cloud deployment — runs locally, per hackathon rules.
 - No authentication or multi-user support — single-operator demo scope.

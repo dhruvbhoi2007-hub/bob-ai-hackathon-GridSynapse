@@ -6,8 +6,13 @@ and writes results to src/data/risk_output.json.
 
 import json
 import math
+import os
 import urllib.request
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent / ".env")
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -215,6 +220,114 @@ def build_explanation(
     )
 
 # ---------------------------------------------------------------------------
+# watsonx.ai AI explanation (with static fallback)
+# ---------------------------------------------------------------------------
+
+_WATSONX_URL = "https://eu-de.ml.cloud.ibm.com"
+_MODEL_ID = "ibm/granite-4-h-small"
+
+
+def generate_explanation(
+    asset: dict,
+    score: float,
+    breakdown: dict,
+    label: str,
+    s_notes: list[str],
+    w_notes: list[str],
+    weather: dict,
+) -> tuple[str, str]:
+    """
+    Call watsonx.ai Granite to produce a plain-language explanation and a
+    recommended action for the asset's risk score.
+
+    Returns (explanation: str, recommended_action: str).
+    Falls back to the static build_explanation / recommended_action logic
+    if the watsonx.ai call fails for any reason.
+    """
+    api_key = os.getenv("WATSONX_API_KEY", "")
+    project_id = os.getenv("WATSONX_PROJECT_ID", "")
+
+    if api_key and project_id:
+        try:
+            from ibm_watsonx_ai import Credentials
+            from ibm_watsonx_ai.foundation_models import ModelInference
+
+            sensor_summary = (
+                "; ".join(breakdown["sensor_notes"])
+                if breakdown["sensor_notes"]
+                else "all sensor readings are within safe operating limits"
+            )
+            weather_summary = (
+                "; ".join(breakdown["weather_notes"])
+                if breakdown["weather_notes"]
+                else (
+                    f"benign conditions — wind {weather['wind_speed_kmh']:.1f} km/h, "
+                    f"precipitation {weather['precipitation_mm']:.1f} mm"
+                )
+            )
+
+            prompt = (
+                f"You are an expert power-grid reliability engineer.\n\n"
+                f"Asset: {asset['asset_type']} {asset['asset_id']} "
+                f"at {asset['location']}\n"
+                f"Risk score: {score:.1f}/100  |  Risk tier: {label}\n"
+                f"Score breakdown (weighted 60/20/20):\n"
+                f"  - Sensor risk {breakdown['sensor_score']:.1f}/100 (60% weight): "
+                f"{sensor_summary}\n"
+                f"  - Weather risk {breakdown['weather_score']:.1f}/100 (20% weight): "
+                f"{weather_summary}\n"
+                f"  - Criticality {breakdown['criticality_score']:.0f}/100 (20% weight): "
+                f"{asset['criticality']} — serves {asset['customers_served']:,} customers, "
+                f"{asset['previous_failures']} prior failure(s), "
+                f"age {asset['age_years']} years\n\n"
+                f"Respond with EXACTLY two labelled lines and nothing else:\n"
+                f"Explanation: <1-2 sentences explaining why this asset has this risk level>\n"
+                f"Action: <1 sentence recommended action>\n"
+            )
+
+            credentials = Credentials(url=_WATSONX_URL, api_key=api_key)
+            model = ModelInference(
+                model_id=_MODEL_ID,
+                credentials=credentials,
+                project_id=project_id,
+            )
+            response = model.chat(
+                messages=[{"role": "user", "content": prompt}],
+                params={"max_tokens": 200, "temperature": 0.2},
+            )
+            raw = (
+                response.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+            )
+
+            explanation_text = ""
+            action_text = ""
+            for line in raw.splitlines():
+                line = line.strip()
+                if line.lower().startswith("explanation:"):
+                    explanation_text = line[len("explanation:"):].strip()
+                elif line.lower().startswith("action:"):
+                    action_text = line[len("action:"):].strip()
+
+            if explanation_text and action_text:
+                return explanation_text, action_text
+
+        except Exception as exc:
+            print(f"  [watsonx.ai] Warning: AI explanation failed for "
+                  f"{asset['asset_id']} — {exc}. Using static fallback.")
+
+    # Static fallback — identical to original logic
+    fallback_explanation = build_explanation(
+        asset, breakdown["sensor_score"], breakdown["sensor_notes"],
+        breakdown["weather_score"], breakdown["weather_notes"],
+        breakdown["criticality_score"], score, label, weather,
+    )
+    fallback_action = recommended_action(label)
+    return fallback_explanation, fallback_action
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -243,9 +356,18 @@ def main():
         c_score = criticality_score(asset["criticality"])
         final = composite_risk(s_risk, w_risk, c_score)
         label = risk_label(final)
-        explanation = build_explanation(
-            asset, s_risk, s_notes, w_risk, w_notes, c_score, final, label, weather
+
+        breakdown = {
+            "sensor_score":      s_risk,
+            "sensor_notes":      s_notes,
+            "weather_score":     w_risk,
+            "weather_notes":     w_notes,
+            "criticality_score": c_score,
+        }
+        explanation, action = generate_explanation(
+            asset, final, breakdown, label, s_notes, w_notes, weather
         )
+
         results.append({
             "asset_id":           asset["asset_id"],
             "asset_type":         asset["asset_type"],
@@ -254,7 +376,7 @@ def main():
             "risk_score":         round(final, 2),
             "risk_label":         label,
             "explanation":        explanation,
-            "recommended_action": recommended_action(label),
+            "recommended_action": action,
         })
 
     # Sort descending by risk score
